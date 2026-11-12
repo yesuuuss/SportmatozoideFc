@@ -60,15 +60,12 @@
   .video-corto { aspect-ratio:auto; max-width:360px; }
   .video-corto video { display:block; width:100%; border-radius:10px; background:#000; }
 
-  /* Anuario: video al lado de las tarjetas (en celular queda arriba) */
-  .anuario-layout { display:grid; grid-template-columns:1fr; gap:16px; }
+  /* Anuario: video arriba de las tarjetas, centrado */
+  .anuario-layout { display:flex; flex-direction:column; gap:16px; }
   #anuario-video:empty { display:none; }
+  #anuario-video { width:100%; max-width:560px; margin:0 auto; }
   #anuario-video .video { max-width:100%; margin:0; }
   #anuario-video .video-corto { max-width:100%; }
-  @media (min-width: 900px) {
-    .anuario-layout { grid-template-columns:300px 1fr; align-items:start; }
-    #anuario-video { position:sticky; top:80px; }
-  }
 
   /* Celulares */
   @media (max-width: 640px) {
