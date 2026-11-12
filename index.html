@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sportmatozoide FC - Comparador</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body { font-family: system-ui, sans-serif; background:#0f172a; color:#e2e8f0; margin:0; padding:20px; }
+  h1, h2 { text-align:center; }
+  section { max-width:700px; margin:16px auto; }
+  .fila { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; }
+  select, input, button { padding:8px; border-radius:6px; border:1px solid #334155; background:#1e293b; color:#e2e8f0; font-size:15px; }
+  button { cursor:pointer; background:#22c55e; color:#0f172a; font-weight:bold; border:none; }
+  button.secundario { background:#334155; color:#e2e8f0; }
+  table { width:100%; border-collapse:collapse; margin-top:16px; }
+  td, th { padding:10px; text-align:center; border-bottom:1px solid #334155; }
+  td.mejor { color:#22c55e; font-weight:bold; }
+  form { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:12px; }
+  input[type=number] { width:90px; }
+  #msg { text-align:center; }
+</style>
+</head>
+<body>
+<h1>Sportmatozoide FC</h1>
+
+<section>
+  <div class="fila">
+    <label>Temporada <select id="temporada"></select></label>
+    <select id="p1"></select> <span>vs</span> <select id="p2"></select>
+  </div>
+  <table id="tabla"></table>
+</section>
+
+<!-- Login -->
+<section id="login">
+  <h2>Iniciar sesión para editar</h2>
+  <form id="form-login">
+    <input id="email" type="email" placeholder="Correo" required>
+    <input id="password" type="password" placeholder="Contraseña" required>
+    <button>Entrar</button>
+  </form>
+</section>
+
+<!-- Administración (solo con sesión) -->
+<section id="admin" hidden>
+  <div class="fila"><button id="logout" class="secundario">Cerrar sesión</button></div>
+
+  <h2>Agregar jugador</h2>
+  <form id="form-jugador">
+    <input id="nuevo-nombre" placeholder="Nombre" required>
+    <input id="nueva-pos" placeholder="Posición">
+    <button>Agregar</button>
+  </form>
+
+  <h2>Guardar estadísticas de temporada</h2>
+  <form id="form-stats">
+    <select id="f-jugador"></select>
+    <input name="temporada" placeholder="Temporada (ej. 2026)" required>
+    <input name="equipo" placeholder="Equipo">
+    <input name="partidos" type="number" min="0" placeholder="Partidos">
+    <input name="goles" type="number" min="0" placeholder="Goles">
+    <input name="asistencias" type="number" min="0" placeholder="Asistencias">
+    <input name="tarjetas" type="number" min="0" placeholder="Tarjetas">
+    <button>Guardar</button>
+  </form>
+  <p id="msg"></p>
+</section>
+
+<script>
+const sb = supabase.createClient(
+  "https://rgpsflazeuzersbmthdb.supabase.co",
+  "sb_publishable_ot6eaSpjWWdCexQ_53wchQ_MVLKnf-a"
+);
+const $ = id => document.getElementById(id);
+const campos = [["partidos","Partidos"],["goles","Goles"],["asistencias","Asistencias"],["tarjetas","Tarjetas"]];
+let jugadores = [], stats = [];
+
+async function cargar() {
+  const { data: j, error: e1 } = await sb.from("players").select("*").order("nombre");
+  const { data: s, error: e2 } = await sb.from("season_stats").select("*");
+  if (e1 || e2) { $("msg").textContent = "Error al cargar: " + (e1 || e2).message; return; }
+  jugadores = j ?? []; stats = s ?? [];
+
+  const temps = [...new Set(stats.map(x => x.temporada))].sort().reverse();
+  $("temporada").innerHTML = temps.map(t => `<option>${t}</option>`).join("");
+  const opciones = jugadores.map(p => `<option value="${p.id}">${p.nombre}</option>`).join("");
+  $("p1").innerHTML = $("p2").innerHTML = $("f-jugador").innerHTML = opciones;
+  if (jugadores.length > 1) $("p2").selectedIndex = 1;
+  comparar();
+}
+
+function comparar() {
+  const temp = $("temporada").value;
+  const buscar = id => stats.find(s => s.player_id == id && s.temporada == temp) || {};
+  const a = buscar($("p1").value), b = buscar($("p2").value);
+  const nombre = id => jugadores.find(p => p.id == id)?.nombre ?? "";
+
+  let html = `<tr><th>${nombre($("p1").value)}</th><th></th><th>${nombre($("p2").value)}</th></tr>`;
+  campos.forEach(([k, label]) => {
+    const va = a[k] ?? 0, vb = b[k] ?? 0;
+    html += `<tr>
+      <td class="${va > vb ? "mejor" : ""}">${va}</td>
+      <td>${label}</td>
+      <td class="${vb > va ? "mejor" : ""}">${vb}</td>
+    </tr>`;
+  });
+  $("tabla").innerHTML = html;
+}
+["temporada", "p1", "p2"].forEach(id => $(id).onchange = comparar);
+
+async function revisarSesion() {
+  const { data: { session } } = await sb.auth.getSession();
+  $("login").hidden = !!session;
+  $("admin").hidden = !session;
+}
+
+$("form-login").onsubmit = async e => {
+  e.preventDefault();
+  const { error } = await sb.auth.signInWithPassword({ email: $("email").value, password: $("password").value });
+  if (error) alert(error.message);
+  revisarSesion();
+};
+$("logout").onclick = async () => { await sb.auth.signOut(); revisarSesion(); };
+
+$("form-jugador").onsubmit = async e => {
+  e.preventDefault();
+  const { error } = await sb.from("players").insert({ nombre: $("nuevo-nombre").value.trim(), posicion: $("nueva-pos").value.trim() });
+  if (error) alert(error.message);
+  e.target.reset();
+  cargar();
+};
+
+$("form-stats").onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target;
+  const fila = {
+    player_id: Number($("f-jugador").value),
+    temporada: f.temporada.value.trim(),
+    equipo: f.equipo.value.trim(),
+    ...Object.fromEntries(campos.map(([k]) => [k, Number(f[k].value) || 0]))
+  };
+  // Si ya existe esa temporada para ese jugador, la actualiza
+  const { error } = await sb.from("season_stats").upsert(fila, { onConflict: "player_id,temporada" });
+  $("msg").textContent = error ? "Error: " + error.message : "Guardado ✔";
+  if (!error) { f.reset(); cargar(); }
+};
+
+sb.auth.onAuthStateChange(() => revisarSesion());
+revisarSesion();
+cargar();
+</script>
+</body>
+</html>
