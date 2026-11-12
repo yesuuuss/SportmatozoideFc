@@ -74,7 +74,10 @@
     .perfil .datos { min-width:0; }
     .perfil h2 { text-align:center; }
     .perfil .resumen { justify-content:center; }
-    .perfil .resumen div { flex:1 1 70px; }
+    .perfil, .perfil .datos { width:100%; }
+    .perfil .resumen { width:100%; }
+    .perfil .resumen div { flex:1 1 calc(50% - 8px); min-width:0; }
+    .tabla-perfil { max-width:100%; }
 
     /* Tablas con desplazamiento horizontal en lugar de salirse de la pantalla */
     table { display:block; overflow-x:auto; white-space:nowrap; }
