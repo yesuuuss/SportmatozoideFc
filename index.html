@@ -3,90 +3,213 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sportmatozoide FC - Comparador</title>
+<title>Sportmatozoide FC</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  body { font-family: system-ui, sans-serif; background:#0f172a; color:#e2e8f0; margin:0; padding:20px; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background:#0f172a; color:#e2e8f0; margin:0; }
+  nav { display:flex; gap:4px; flex-wrap:wrap; justify-content:center; background:#1e293b; padding:10px; position:sticky; top:0; }
+  nav a { color:#e2e8f0; text-decoration:none; padding:8px 12px; border-radius:6px; }
+  nav a:hover, nav a.activa { background:#22c55e; color:#0f172a; }
+  main { padding:20px; max-width:1000px; margin:0 auto; }
   h1, h2 { text-align:center; }
-  section { max-width:700px; margin:16px auto; }
   .fila { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; }
-  select, input, button { padding:8px; border-radius:6px; border:1px solid #334155; background:#1e293b; color:#e2e8f0; font-size:15px; }
+  select, input, textarea, button { padding:8px; border-radius:6px; border:1px solid #334155; background:#1e293b; color:#e2e8f0; font-size:15px; }
+  textarea { width:100%; min-height:90px; }
   button { cursor:pointer; background:#22c55e; color:#0f172a; font-weight:bold; border:none; }
+  button:disabled { background:#334155; color:#94a3b8; cursor:not-allowed; }
   button.secundario { background:#334155; color:#e2e8f0; }
-  table { width:100%; border-collapse:collapse; margin-top:16px; }
+  table { width:100%; max-width:600px; margin:16px auto; border-collapse:collapse; }
   td, th { padding:10px; text-align:center; border-bottom:1px solid #334155; }
   td.mejor { color:#22c55e; font-weight:bold; }
-  form { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:12px; }
-  input[type=number] { width:90px; }
-  #msg { text-align:center; }
+  form { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:8px 0 16px; }
+  input[type=number] { width:100px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:16px; margin-top:16px; }
+  .card { background:#1e293b; border-radius:10px; padding:12px; text-align:center; }
+  .card img, .foto-vacia { width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px; background:#334155; display:flex; align-items:center; justify-content:center; font-size:48px; color:#94a3b8; }
+  .card h3 { margin:10px 0 4px; font-size:18px; }
+  .card .pos { color:#22c55e; margin:0 0 8px; font-size:14px; }
+  .card p { font-size:14px; line-height:1.4; }
+  .precio { font-weight:bold; font-size:18px; }
+  .nota { text-align:center; color:#94a3b8; font-size:14px; }
+  #msg { text-align:center; min-height:1.2em; }
+  [hidden] { display:none !important; }
+  .bloque { margin-bottom:24px; }
 </style>
 </head>
 <body>
-<h1>Sportmatozoide FC</h1>
 
-<section>
-  <div class="fila">
-    <label>Temporada <select id="temporada"></select></label>
-    <select id="p1"></select> <span>vs</span> <select id="p2"></select>
-  </div>
-  <table id="tabla"></table>
-</section>
+<nav>
+  <a href="#/inicio">Inicio</a>
+  <a href="#/anuario">Anuario</a>
+  <a href="#/sobre">El equipo</a>
+  <a href="#/merch">Merch</a>
+  <a href="#/admin">Admin</a>
+</nav>
 
-<!-- Login -->
-<section id="login">
-  <h2>Iniciar sesión para editar</h2>
-  <form id="form-login">
-    <input id="email" type="email" placeholder="Correo" required>
-    <input id="password" type="password" placeholder="Contraseña" required>
-    <button>Entrar</button>
-  </form>
-</section>
+<main>
 
-<!-- Administración (solo con sesión) -->
-<section id="admin" hidden>
-  <div class="fila"><button id="logout" class="secundario">Cerrar sesión</button></div>
+  <!-- INICIO: comparador -->
+  <section data-vista="inicio">
+    <h1>Comparador de jugadores</h1>
+    <div class="fila">
+      <label>Temporada <select id="temporada"></select></label>
+      <select id="p1"></select> <span>vs</span> <select id="p2"></select>
+    </div>
+    <table id="tabla"></table>
+  </section>
 
-  <h2>Agregar jugador</h2>
-  <form id="form-jugador">
-    <input id="nuevo-nombre" placeholder="Nombre" required>
-    <input id="nueva-pos" placeholder="Posición">
-    <button>Agregar</button>
-  </form>
+  <!-- ANUARIO -->
+  <section data-vista="anuario" hidden>
+    <h1>Anuario</h1>
+    <p class="nota" id="temporada-anuario"></p>
+    <div id="anuario" class="grid"></div>
+  </section>
 
-  <h2>Guardar estadísticas de temporada</h2>
-  <form id="form-stats">
-    <select id="f-jugador"></select>
-    <input name="temporada" placeholder="Temporada (ej. 2026)" required>
-    <input name="equipo" placeholder="Equipo">
-    <input name="partidos" type="number" min="0" placeholder="Partidos">
-    <input name="goles" type="number" min="0" placeholder="Goles">
-    <input name="asistencias" type="number" min="0" placeholder="Asistencias">
-    <input name="tarjetas" type="number" min="0" placeholder="Tarjetas">
-    <button>Guardar</button>
-  </form>
+  <!-- SOBRE EL EQUIPO -->
+  <section data-vista="sobre" hidden>
+    <div id="sobre"></div>
+  </section>
+
+  <!-- MERCH -->
+  <section data-vista="merch" hidden>
+    <h1>Merch</h1>
+    <div id="merch" class="grid"></div>
+    <p class="nota">Compras en línea próximamente.</p>
+  </section>
+
+  <!-- ADMIN -->
+  <section data-vista="admin" hidden>
+    <div id="login" class="bloque">
+      <h2>Iniciar sesión para editar</h2>
+      <form id="form-login">
+        <input id="email" type="email" placeholder="Correo" required>
+        <input id="password" type="password" placeholder="Contraseña" required>
+        <button>Entrar</button>
+      </form>
+    </div>
+
+    <div id="panel" hidden>
+      <div class="fila"><button id="logout" class="secundario">Cerrar sesión</button></div>
+
+      <div class="bloque">
+        <h2>Información del equipo</h2>
+        <form id="form-equipo">
+          <input id="q-nombre" placeholder="Nombre del equipo">
+          <input id="q-fundacion" placeholder="Fecha de fundación (ej. 2024)">
+          <textarea id="q-texto" placeholder="Historia, logros, presentación"></textarea>
+          <button>Guardar información</button>
+        </form>
+      </div>
+
+      <div class="bloque">
+        <h2>Agregar jugador</h2>
+        <form id="form-jugador">
+          <input id="nuevo-nombre" placeholder="Nombre" required>
+          <input id="nueva-pos" placeholder="Posición">
+          <textarea id="nueva-desc" placeholder="Descripción breve"></textarea>
+          <button>Agregar</button>
+        </form>
+      </div>
+
+      <div class="bloque">
+        <h2>Editar jugador (foto y descripción)</h2>
+        <form id="form-editar">
+          <select id="e-jugador"></select>
+          <input id="e-posicion" placeholder="Posición">
+          <textarea id="e-descripcion" placeholder="Descripción breve"></textarea>
+          <input id="e-foto" type="file" accept="image/*">
+          <button>Guardar cambios</button>
+        </form>
+      </div>
+
+      <div class="bloque">
+        <h2>Guardar estadísticas de temporada</h2>
+        <form id="form-stats">
+          <select id="f-jugador"></select>
+          <input name="temporada" placeholder="Temporada (ej. 26)" required>
+          <input name="equipo" placeholder="Equipo">
+          <input name="numero" type="number" min="0" placeholder="Dorsal">
+          <input name="partidos" type="number" min="0" placeholder="Partidos">
+          <input name="goles" type="number" min="0" placeholder="Goles">
+          <input name="asistencias" type="number" min="0" placeholder="Asistencias">
+          <input name="tarjetas" type="number" min="0" placeholder="Tarjetas">
+          <button>Guardar</button>
+        </form>
+      </div>
+
+      <div class="bloque">
+        <h2>Agregar producto de merch</h2>
+        <form id="form-merch">
+          <input id="m-nombre" placeholder="Nombre del producto" required>
+          <input id="m-precio" type="number" min="0" step="0.01" placeholder="Precio">
+          <textarea id="m-descripcion" placeholder="Descripción"></textarea>
+          <input id="m-imagen" type="file" accept="image/*">
+          <label><input id="m-activo" type="checkbox" checked> Visible en la página</label>
+          <button>Agregar producto</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
   <p id="msg"></p>
-</section>
+</main>
 
 <script>
 const sb = supabase.createClient(
   "https://rgpsflazeuzersbmthdb.supabase.co",
   "sb_publishable_ot6eaSpjWWdCexQ_53wchQ_MVLKnf-a"
 );
+
 const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 const campos = [["partidos","Partidos"],["goles","Goles"],["asistencias","Asistencias"],["tarjetas","Tarjetas"]];
-let jugadores = [], stats = [];
+const mostrarMsg = t => { $("msg").textContent = t; };
 
+let jugadores = [], stats = [], info = {}, merch = [], temporadas = [];
+
+/* ---------- Navegación ---------- */
+function mostrarVista() {
+  const v = location.hash.replace("#/", "") || "inicio";
+  document.querySelectorAll("[data-vista]").forEach(s => s.hidden = s.dataset.vista !== v);
+  document.querySelectorAll("nav a").forEach(a => a.classList.toggle("activa", a.getAttribute("href") === "#/" + v));
+}
+window.addEventListener("hashchange", mostrarVista);
+
+/* ---------- Carga de datos ---------- */
 async function cargar() {
-  const { data: j, error: e1 } = await sb.from("players").select("*").order("nombre");
-  const { data: s, error: e2 } = await sb.from("season_stats").select("*");
-  if (e1 || e2) { $("msg").textContent = "Error al cargar: " + (e1 || e2).message; return; }
-  jugadores = j ?? []; stats = s ?? [];
+  const [j, s, e, m] = await Promise.all([
+    sb.from("players").select("*").order("nombre"),
+    sb.from("season_stats").select("*"),
+    sb.from("equipo_info").select("*").eq("id", 1).maybeSingle(),
+    sb.from("merch").select("*").eq("activo", true).order("id")
+  ]);
+  const error = j.error || s.error || e.error || m.error;
+  if (error) { mostrarMsg("Error al cargar: " + error.message); return; }
 
-  const temps = [...new Set(stats.map(x => x.temporada))].sort().reverse();
-  $("temporada").innerHTML = temps.map(t => `<option>${t}</option>`).join("");
-  const opciones = jugadores.map(p => `<option value="${p.id}">${p.nombre}</option>`).join("");
-  $("p1").innerHTML = $("p2").innerHTML = $("f-jugador").innerHTML = opciones;
-  if (jugadores.length > 1) $("p2").selectedIndex = 1;
+  jugadores = j.data ?? [];
+  stats = s.data ?? [];
+  info = e.data ?? {};
+  merch = m.data ?? [];
+  temporadas = [...new Set(stats.map(x => x.temporada))].sort().reverse();
+
+  renderComparador();
+  renderAnuario();
+  renderSobre();
+  renderMerch();
+  renderAdmin();
+}
+
+/* ---------- Comparador ---------- */
+function renderComparador() {
+  const opciones = jugadores.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join("");
+  const seleccionadaP1 = $("p1").value, seleccionadaP2 = $("p2").value, seleccionadaT = $("temporada").value;
+  $("temporada").innerHTML = temporadas.map(t => `<option>${esc(t)}</option>`).join("");
+  $("p1").innerHTML = $("p2").innerHTML = opciones;
+  if (seleccionadaT && temporadas.includes(seleccionadaT)) $("temporada").value = seleccionadaT;
+  if (seleccionadaP1) $("p1").value = seleccionadaP1;
+  if (seleccionadaP2) $("p2").value = seleccionadaP2;
+  else if (jugadores.length > 1) $("p2").selectedIndex = 1;
   comparar();
 }
 
@@ -94,7 +217,7 @@ function comparar() {
   const temp = $("temporada").value;
   const buscar = id => stats.find(s => s.player_id == id && s.temporada == temp) || {};
   const a = buscar($("p1").value), b = buscar($("p2").value);
-  const nombre = id => jugadores.find(p => p.id == id)?.nombre ?? "";
+  const nombre = id => esc(jugadores.find(p => p.id == id)?.nombre ?? "");
 
   let html = `<tr><th>${nombre($("p1").value)}</th><th></th><th>${nombre($("p2").value)}</th></tr>`;
   campos.forEach(([k, label]) => {
@@ -109,10 +232,91 @@ function comparar() {
 }
 ["temporada", "p1", "p2"].forEach(id => $(id).onchange = comparar);
 
+/* ---------- Anuario ---------- */
+function renderAnuario() {
+  const temp = temporadas[0] ?? "";
+  $("temporada-anuario").textContent = temp ? `Temporada ${temp}` : "";
+
+  if (!jugadores.length) {
+    $("anuario").innerHTML = `<p class="nota">Aún no hay jugadores registrados.</p>`;
+    return;
+  }
+
+  $("anuario").innerHTML = jugadores.map(p => {
+    const st = stats.find(s => s.player_id == p.id && s.temporada == temp) || {};
+    const foto = p.foto_url
+      ? `<img src="${esc(p.foto_url)}" alt="${esc(p.nombre)}">`
+      : `<div class="foto-vacia">${esc((p.nombre || "?")[0])}</div>`;
+    return `<article class="card">
+      ${foto}
+      <h3>${esc(p.nombre)}${st.numero ? " · #" + esc(st.numero) : ""}</h3>
+      <p class="pos">${esc(p.posicion || "")}</p>
+      <p>${esc(p.descripcion || "Próximamente.")}</p>
+    </article>`;
+  }).join("");
+}
+
+/* ---------- Sobre el equipo ---------- */
+function renderSobre() {
+  const texto = esc(info.texto || "Próximamente.").replace(/\n/g, "<br>");
+  $("sobre").innerHTML = `
+    <h1>${esc(info.nombre || "Sportmatozoide FC")}</h1>
+    ${info.fundacion ? `<p class="nota"><strong>Fundado:</strong> ${esc(info.fundacion)}</p>` : ""}
+    <p style="max-width:700px;margin:20px auto;line-height:1.6">${texto}</p>`;
+}
+
+/* ---------- Merch ---------- */
+function renderMerch() {
+  if (!merch.length) {
+    $("merch").innerHTML = `<p class="nota">Pronto habrá artículos a la venta.</p>`;
+    return;
+  }
+  $("merch").innerHTML = merch.map(m => {
+    const imagen = m.imagen_url
+      ? `<img src="${esc(m.imagen_url)}" alt="${esc(m.nombre)}">`
+      : `<div class="foto-vacia">🛍️</div>`;
+    const precio = m.precio != null ? `<p class="precio">Q${esc(Number(m.precio).toFixed(2))}</p>` : "";
+    return `<article class="card">
+      ${imagen}
+      <h3>${esc(m.nombre)}</h3>
+      <p>${esc(m.descripcion || "")}</p>
+      ${precio}
+      <button disabled>Próximamente</button>
+    </article>`;
+  }).join("");
+}
+
+/* ---------- Admin ---------- */
 async function revisarSesion() {
   const { data: { session } } = await sb.auth.getSession();
   $("login").hidden = !!session;
-  $("admin").hidden = !session;
+  $("panel").hidden = !session;
+}
+
+function renderAdmin() {
+  const opciones = jugadores.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join("");
+  $("f-jugador").innerHTML = opciones;
+  $("e-jugador").innerHTML = opciones;
+  cargarFormEditar();
+
+  $("q-nombre").value = info.nombre ?? "";
+  $("q-fundacion").value = info.fundacion ?? "";
+  $("q-texto").value = info.texto ?? "";
+}
+
+function cargarFormEditar() {
+  const p = jugadores.find(x => x.id == $("e-jugador").value);
+  $("e-posicion").value = p?.posicion ?? "";
+  $("e-descripcion").value = p?.descripcion ?? "";
+}
+$("e-jugador").onchange = cargarFormEditar;
+
+async function subirFoto(file, prefijo) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const ruta = `${prefijo}-${Date.now()}.${ext}`;
+  const { error } = await sb.storage.from("fotos").upload(ruta, file);
+  if (error) throw error;
+  return sb.storage.from("fotos").getPublicUrl(ruta).data.publicUrl;
 }
 
 $("form-login").onsubmit = async e => {
@@ -123,12 +327,48 @@ $("form-login").onsubmit = async e => {
 };
 $("logout").onclick = async () => { await sb.auth.signOut(); revisarSesion(); };
 
+$("form-equipo").onsubmit = async e => {
+  e.preventDefault();
+  const { error } = await sb.from("equipo_info").upsert({
+    id: 1,
+    nombre: $("q-nombre").value.trim(),
+    fundacion: $("q-fundacion").value.trim(),
+    texto: $("q-texto").value.trim()
+  });
+  mostrarMsg(error ? "Error: " + error.message : "Información guardada ✔");
+  if (!error) cargar();
+};
+
 $("form-jugador").onsubmit = async e => {
   e.preventDefault();
-  const { error } = await sb.from("players").insert({ nombre: $("nuevo-nombre").value.trim(), posicion: $("nueva-pos").value.trim() });
+  const { error } = await sb.from("players").insert({
+    nombre: $("nuevo-nombre").value.trim(),
+    posicion: $("nueva-pos").value.trim(),
+    descripcion: $("nueva-desc").value.trim()
+  });
   if (error) alert(error.message);
   e.target.reset();
   cargar();
+};
+
+$("form-editar").onsubmit = async e => {
+  e.preventDefault();
+  try {
+    const cambios = {
+      posicion: $("e-posicion").value.trim(),
+      descripcion: $("e-descripcion").value.trim()
+    };
+    const archivo = $("e-foto").files[0];
+    if (archivo) cambios.foto_url = await subirFoto(archivo, "jugador-" + $("e-jugador").value);
+
+    const { error } = await sb.from("players").update(cambios).eq("id", $("e-jugador").value);
+    if (error) throw error;
+    mostrarMsg("Jugador actualizado ✔");
+    e.target.reset();
+    cargar();
+  } catch (err) {
+    mostrarMsg("Error: " + err.message);
+  }
 };
 
 $("form-stats").onsubmit = async e => {
@@ -138,15 +378,40 @@ $("form-stats").onsubmit = async e => {
     player_id: Number($("f-jugador").value),
     temporada: f.temporada.value.trim(),
     equipo: f.equipo.value.trim(),
+    numero: f.numero.value ? Number(f.numero.value) : null,
     ...Object.fromEntries(campos.map(([k]) => [k, Number(f[k].value) || 0]))
   };
   // Si ya existe esa temporada para ese jugador, la actualiza
   const { error } = await sb.from("season_stats").upsert(fila, { onConflict: "player_id,temporada" });
-  $("msg").textContent = error ? "Error: " + error.message : "Guardado ✔";
+  mostrarMsg(error ? "Error: " + error.message : "Guardado ✔");
   if (!error) { f.reset(); cargar(); }
 };
 
+$("form-merch").onsubmit = async e => {
+  e.preventDefault();
+  try {
+    const archivo = $("m-imagen").files[0];
+    const imagen_url = archivo ? await subirFoto(archivo, "merch") : null;
+    const precio = $("m-precio").value ? Number($("m-precio").value) : null;
+    const { error } = await sb.from("merch").insert({
+      nombre: $("m-nombre").value.trim(),
+      descripcion: $("m-descripcion").value.trim(),
+      precio,
+      imagen_url,
+      activo: $("m-activo").checked
+    });
+    if (error) throw error;
+    mostrarMsg("Producto agregado ✔");
+    e.target.reset();
+    $("m-activo").checked = true;
+    cargar();
+  } catch (err) {
+    mostrarMsg("Error: " + err.message);
+  }
+};
+
 sb.auth.onAuthStateChange(() => revisarSesion());
+mostrarVista();
 revisarSesion();
 cargar();
 </script>
