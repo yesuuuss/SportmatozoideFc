@@ -76,6 +76,23 @@
   .perfil .resumen div:nth-child(4) { background:#dc2626; }
   .perfil .resumen span { color:rgba(255,255,255,.85); }
 
+  /* Ficha de jugador tipo estadísticas deportivas */
+  .perfil { background:linear-gradient(120deg, #0b1220 0%, #1e293b 100%); border:1px solid #334155; box-shadow:0 12px 30px rgba(0,0,0,.4); }
+  .perfil .foto { order:2; width:240px; height:240px; flex-shrink:0; border-radius:14px; overflow:hidden; }
+  .perfil .datos { order:1; }
+  .equipo-linea { text-transform:uppercase; letter-spacing:2px; font-size:12px; color:#22c55e; margin:0 0 4px; font-weight:700; }
+  .nombre-grande { font-size:44px; font-weight:900; letter-spacing:-1px; text-transform:uppercase; margin:0 0 6px; text-align:left; line-height:1.05; }
+  .dorsal-pill { font-size:16px; vertical-align:middle; background:#22c55e; color:#0f172a; border-radius:8px; padding:3px 8px; letter-spacing:0; }
+  .perfil .pos { color:#94a3b8; text-transform:uppercase; letter-spacing:1px; font-size:13px; }
+  .tabla-perfil th { text-transform:uppercase; font-size:11px; letter-spacing:1px; color:#94a3b8; font-weight:700; }
+  .tabla-perfil td { border-bottom:1px solid #1e293b; }
+  @media (max-width: 640px) {
+    .perfil .foto { order:0; width:160px; height:160px; }
+    .nombre-grande { font-size:32px; text-align:center; }
+    .perfil h2.nombre-grande { text-align:center; }
+    .equipo-linea { text-align:center; }
+  }
+
   /* Anuario: video arriba de las tarjetas, centrado */
   .anuario-layout { display:flex; flex-direction:column; gap:16px; }
   #anuario-video:empty { display:none; }
@@ -373,7 +390,8 @@ function renderPerfil() {
   $("perfil").innerHTML = `
     <div class="foto">${foto}</div>
     <div class="datos">
-      <h2>${esc(p.nombre)}${ultima.numero ? " · #" + esc(ultima.numero) : ""}</h2>
+      <p class="equipo-linea">${esc(ultima.equipo || "")}</p>
+      <h2 class="nombre-grande">${esc(p.nombre)}${ultima.numero ? ` <span class="dorsal-pill">#${esc(ultima.numero)}</span>` : ""}</h2>
       <p class="pos">${esc(p.posicion || "")}</p>
       <p>${esc(p.descripcion || "")}</p>
       <div class="resumen">
