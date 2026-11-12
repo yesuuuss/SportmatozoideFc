@@ -46,6 +46,9 @@
   .perfil .resumen span { font-size:12px; color:#94a3b8; }
   .tabla-perfil { width:100%; max-width:none; margin:16px 0 0; }
   .tabla-perfil td.total { font-weight:bold; border-top:2px solid #334155; }
+  .sec { text-align:center; margin:32px 0 8px; }
+  .texto { max-width:700px; margin:12px auto; line-height:1.6; text-align:center; }
+  .propio td { color:#22c55e; font-weight:bold; }
   .nota { text-align:center; color:#94a3b8; font-size:14px; }
   #msg { text-align:center; min-height:1.2em; }
   [hidden] { display:none !important; }
@@ -119,8 +122,25 @@
           <input id="q-nombre" placeholder="Nombre del equipo">
           <input id="q-fundacion" placeholder="Fecha de fundación (ej. 2024)">
           <textarea id="q-texto" placeholder="Historia, logros, presentación"></textarea>
+          <textarea id="q-vision" placeholder="Visión"></textarea>
+          <textarea id="q-mision" placeholder="Misión"></textarea>
+          <input id="q-sede" placeholder="Dónde juegan (cancha o sede)">
+          <input id="q-horario" placeholder="Horario (ej. sábados 8:00 a 10:00 am)">
           <button>Guardar información</button>
         </form>
+
+        <h2>Tabla de posiciones</h2>
+        <form id="form-posicion">
+          <input id="t-equipo" placeholder="Equipo" required>
+          <input id="t-pj" type="number" min="0" placeholder="PJ">
+          <input id="t-pg" type="number" min="0" placeholder="PG">
+          <input id="t-pe" type="number" min="0" placeholder="PE">
+          <input id="t-pp" type="number" min="0" placeholder="PP">
+          <input id="t-gf" type="number" min="0" placeholder="GF">
+          <input id="t-gc" type="number" min="0" placeholder="GC">
+          <button>Guardar en la tabla</button>
+        </form>
+        <p class="nota">Los puntos se calculan solos: 3 por victoria y 1 por empate. Para cambiar un equipo, vuelve a guardarlo con el mismo nombre.</p>
       </div>
 
       <div class="bloque">
@@ -187,7 +207,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&
 const campos = [["partidos","Partidos"],["goles","Goles"],["asistencias","Asistencias"],["tarjetas","Tarjetas"]];
 const mostrarMsg = t => { $("msg").textContent = t; };
 
-let jugadores = [], stats = [], info = {}, merch = [], temporadas = [];
+let jugadores = [], stats = [], info = {}, merch = [], temporadas = [], posiciones = [];
 
 /* ---------- Navegación ---------- */
 function mostrarVista() {
@@ -199,19 +219,21 @@ window.addEventListener("hashchange", mostrarVista);
 
 /* ---------- Carga de datos ---------- */
 async function cargar() {
-  const [j, s, e, m] = await Promise.all([
+  const [j, s, e, m, t] = await Promise.all([
     sb.from("players").select("*").order("nombre"),
     sb.from("season_stats").select("*"),
     sb.from("equipo_info").select("*").eq("id", 1).maybeSingle(),
-    sb.from("merch").select("*").eq("activo", true).order("id")
+    sb.from("merch").select("*").eq("activo", true).order("id"),
+    sb.from("tabla_posiciones").select("*")
   ]);
-  const error = j.error || s.error || e.error || m.error;
+  const error = j.error || s.error || e.error || m.error || t.error;
   if (error) { mostrarMsg("Error al cargar: " + error.message); return; }
 
   jugadores = j.data ?? [];
   stats = s.data ?? [];
   info = e.data ?? {};
   merch = m.data ?? [];
+  posiciones = t.data ?? [];
   temporadas = [...new Set(stats.map(x => x.temporada))].sort().reverse();
 
   renderComparador();
@@ -341,12 +363,38 @@ function renderAnuario() {
 
 /* ---------- Sobre el equipo ---------- */
 function renderSobre() {
-  const texto = esc(info.texto || "Próximamente.").replace(/\n/g, "<br>");
+  const nombreEquipo = info.nombre || "Sportmatozoide FC";
+  const aTexto = v => esc(v).replace(/\n/g, "<br>");
+  const bloque = (titulo, valor) => valor ? `<h2 class="sec">${titulo}</h2><p class="texto">${aTexto(valor)}</p>` : "";
+
+  const ordenadas = [...posiciones].sort((a, b) =>
+    (b.pts - a.pts) || ((b.gf - b.gc) - (a.gf - a.gc)) || (b.gf - a.gf));
+  const filas = ordenadas.map((r, i) => `
+    <tr class="${r.equipo === nombreEquipo ? "propio" : ""}">
+      <td>${i + 1}</td>
+      <td style="text-align:left">${esc(r.equipo)}</td>
+      <td>${r.pj}</td><td>${r.pg}</td><td>${r.pe}</td><td>${r.pp}</td>
+      <td>${r.gf}</td><td>${r.gc}</td><td>${r.gf - r.gc}</td>
+      <td><strong>${r.pts}</strong></td>
+    </tr>`).join("");
+  const tabla = posiciones.length ? `
+    <h2 class="sec">Tabla de posiciones</h2>
+    <p class="nota">${esc(posiciones[0].torneo || "")}</p>
+    <table class="tabla-perfil">
+      <tr><th>#</th><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th></tr>
+      ${filas}
+    </table>` : "";
+
   $("sobre").innerHTML = `
-    <img class="logo-grande" src="logo.png" alt="Logo de Sportmatozoide FC">
-    <h1>${esc(info.nombre || "Sportmatozoide FC")}</h1>
+    <img class="logo-grande" src="logo.png" alt="Logo de ${esc(nombreEquipo)}">
+    <h1>${esc(nombreEquipo)}</h1>
     ${info.fundacion ? `<p class="nota"><strong>Fundado:</strong> ${esc(info.fundacion)}</p>` : ""}
-    <p style="max-width:700px;margin:20px auto;line-height:1.6">${texto}</p>`;
+    ${info.texto ? `<p class="texto">${aTexto(info.texto)}</p>` : ""}
+    ${bloque("Visión", info.vision)}
+    ${bloque("Misión", info.mision)}
+    <h2 class="sec">Dónde y cuándo jugamos</h2>
+    <p class="texto">${info.sede ? esc(info.sede) : "Próximamente."}${info.horario ? "<br>" + esc(info.horario) : ""}</p>
+    ${tabla}`;
 }
 
 /* ---------- Merch ---------- */
@@ -386,6 +434,10 @@ function renderAdmin() {
   $("q-nombre").value = info.nombre ?? "";
   $("q-fundacion").value = info.fundacion ?? "";
   $("q-texto").value = info.texto ?? "";
+  $("q-vision").value = info.vision ?? "";
+  $("q-mision").value = info.mision ?? "";
+  $("q-sede").value = info.sede ?? "";
+  $("q-horario").value = info.horario ?? "";
 }
 
 function cargarFormEditar() {
@@ -417,10 +469,29 @@ $("form-equipo").onsubmit = async e => {
     id: 1,
     nombre: $("q-nombre").value.trim(),
     fundacion: $("q-fundacion").value.trim(),
-    texto: $("q-texto").value.trim()
+    texto: $("q-texto").value.trim(),
+    vision: $("q-vision").value.trim(),
+    mision: $("q-mision").value.trim(),
+    sede: $("q-sede").value.trim(),
+    horario: $("q-horario").value.trim()
   });
   mostrarMsg(error ? "Error: " + error.message : "Información guardada ✔");
   if (!error) cargar();
+};
+
+$("form-posicion").onsubmit = async e => {
+  e.preventDefault();
+  const n = id => Number($(id).value) || 0;
+  const fila = {
+    torneo: "Torneo San Cristóbal",
+    equipo: $("t-equipo").value.trim(),
+    pj: n("t-pj"), pg: n("t-pg"), pe: n("t-pe"), pp: n("t-pp"),
+    gf: n("t-gf"), gc: n("t-gc")
+  };
+  fila.pts = fila.pg * 3 + fila.pe;
+  const { error } = await sb.from("tabla_posiciones").upsert(fila, { onConflict: "torneo,equipo" });
+  mostrarMsg(error ? "Error: " + error.message : "Tabla actualizada ✔");
+  if (!error) { e.target.reset(); cargar(); }
 };
 
 $("form-jugador").onsubmit = async e => {
