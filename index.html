@@ -60,6 +60,16 @@
   .video-corto { aspect-ratio:auto; max-width:360px; }
   .video-corto video { display:block; width:100%; border-radius:10px; background:#000; }
 
+  /* Anuario: video al lado de las tarjetas (en celular queda arriba) */
+  .anuario-layout { display:grid; grid-template-columns:1fr; gap:16px; }
+  #anuario-video:empty { display:none; }
+  #anuario-video .video { max-width:100%; margin:0; }
+  #anuario-video .video-corto { max-width:100%; }
+  @media (min-width: 900px) {
+    .anuario-layout { grid-template-columns:300px 1fr; align-items:start; }
+    #anuario-video { position:sticky; top:80px; }
+  }
+
   /* Celulares */
   @media (max-width: 640px) {
     main { padding:12px; }
@@ -137,7 +147,10 @@
   <section data-vista="anuario" hidden>
     <h1>Anuario</h1>
     <p class="nota" id="temporada-anuario"></p>
-    <div id="anuario" class="grid"></div>
+    <div class="anuario-layout">
+      <aside id="anuario-video"></aside>
+      <div id="anuario" class="grid"></div>
+    </div>
   </section>
 
   <!-- SOBRE EL EQUIPO -->
@@ -393,6 +406,7 @@ $("p1").onchange = () => { renderPerfil(); comparar(); };
 function renderAnuario() {
   const temp = temporadas[0] ?? "";
   $("temporada-anuario").textContent = temp ? `Temporada ${temp}` : "";
+  $("anuario-video").innerHTML = renderVideo(info.video_url);
 
   if (!jugadores.length) {
     $("anuario").innerHTML = `<p class="nota">Aún no hay jugadores registrados.</p>`;
