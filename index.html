@@ -57,6 +57,8 @@
 
   .video { position:relative; width:100%; max-width:700px; aspect-ratio:16/9; margin:16px auto; }
   .video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; border-radius:10px; }
+  .video-corto { aspect-ratio:auto; max-width:360px; }
+  .video-corto video { display:block; width:100%; border-radius:10px; background:#000; }
 
   /* Celulares */
   @media (max-width: 640px) {
@@ -175,6 +177,7 @@
           <input id="q-sede" placeholder="Dónde juegan (cancha o sede)">
           <input id="q-horario" placeholder="Horario (ej. sábados 8:00 a 10:00 am)">
           <input id="q-video" placeholder="Enlace de video de YouTube (opcional)">
+          <label>o sube un video corto (mp4 o webm): <input id="q-video-archivo" type="file" accept="video/mp4,video/webm"></label>
           <button>Guardar información</button>
         </form>
 
@@ -417,6 +420,17 @@ function urlEmbed(url) {
   return m ? `https://www.youtube.com/embed/${m[1]}` : null;
 }
 
+/* Muestra un video subido (mp4/webm) en bucle, o un enlace de YouTube */
+function renderVideo(url) {
+  if (!url) return "";
+  const yt = urlEmbed(url);
+  if (yt) return `<div class="video"><iframe src="${yt}" title="Video del equipo" allowfullscreen loading="lazy"></iframe></div>`;
+  if (/\.(mp4|webm)(\?|$)/i.test(url)) {
+    return `<div class="video video-corto"><video src="${esc(url)}" autoplay muted loop playsinline controls></video></div>`;
+  }
+  return "";
+}
+
 function renderSobre() {
   const nombreEquipo = info.nombre || "Sportmatozoide FC";
   const aTexto = v => esc(v).replace(/\n/g, "<br>");
@@ -445,7 +459,7 @@ function renderSobre() {
     <h1>${esc(nombreEquipo)}</h1>
     ${info.fundacion ? `<p class="nota"><strong>Fundado:</strong> ${esc(info.fundacion)}</p>` : ""}
     ${info.texto ? `<p class="texto">${aTexto(info.texto)}</p>` : ""}
-    ${urlEmbed(info.video_url) ? `<div class="video"><iframe src="${urlEmbed(info.video_url)}" title="Video del equipo" allowfullscreen loading="lazy"></iframe></div>` : ""}
+    ${renderVideo(info.video_url)}
     ${bloque("Visión", info.vision)}
     ${bloque("Misión", info.mision)}
     <h2 class="sec">Dónde y cuándo jugamos</h2>
@@ -522,6 +536,12 @@ $("logout").onclick = async () => { await sb.auth.signOut(); revisarSesion(); };
 
 $("form-equipo").onsubmit = async e => {
   e.preventDefault();
+  let videoUrl = $("q-video").value.trim() || null;
+  const archivoVideo = $("q-video-archivo").files[0];
+  if (archivoVideo) {
+    try { videoUrl = await subirFoto(archivoVideo, "video-equipo"); }
+    catch (err) { mostrarMsg("Error al subir el video: " + err.message); return; }
+  }
   const { error } = await sb.from("equipo_info").upsert({
     id: 1,
     nombre: $("q-nombre").value.trim(),
@@ -531,7 +551,7 @@ $("form-equipo").onsubmit = async e => {
     mision: $("q-mision").value.trim(),
     sede: $("q-sede").value.trim(),
     horario: $("q-horario").value.trim(),
-    video_url: $("q-video").value.trim() || null
+    video_url: videoUrl
   });
   mostrarMsg(error ? "Error: " + error.message : "Información guardada ✔");
   if (!error) cargar();
