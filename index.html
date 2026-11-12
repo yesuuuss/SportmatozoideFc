@@ -60,6 +60,22 @@
   .video-corto { aspect-ratio:auto; max-width:360px; }
   .video-corto video { display:block; width:100%; border-radius:10px; background:#000; }
 
+  /* Estilo de tarjetas tipo app */
+  .card { background:linear-gradient(160deg, #1e293b, #0f172a); border:1px solid #334155; border-radius:18px; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+  .card img, .card .foto-vacia { border-radius:14px; }
+  .card h3 { font-size:17px; }
+  .card .pos { text-transform:uppercase; letter-spacing:.5px; font-size:12px; font-weight:700; }
+  .foto-wrap { position:relative; }
+  .dorsal-badge { position:absolute; top:8px; right:8px; background:#22c55e; color:#0f172a; font-weight:900; font-size:18px; border-radius:10px; padding:4px 10px; box-shadow:0 4px 10px rgba(0,0,0,.3); }
+
+  /* Cifras del perfil en bloques de colores */
+  .perfil .resumen div { border-radius:12px; padding:10px 14px; color:#fff; }
+  .perfil .resumen div:nth-child(1) { background:#16a34a; }
+  .perfil .resumen div:nth-child(2) { background:#ea580c; }
+  .perfil .resumen div:nth-child(3) { background:#2563eb; }
+  .perfil .resumen div:nth-child(4) { background:#dc2626; }
+  .perfil .resumen span { color:rgba(255,255,255,.85); }
+
   /* Anuario: video arriba de las tarjetas, centrado */
   .anuario-layout { display:flex; flex-direction:column; gap:16px; }
   #anuario-video:empty { display:none; }
@@ -416,8 +432,8 @@ function renderAnuario() {
       ? `<img src="${esc(p.foto_url)}" alt="${esc(p.nombre)}">`
       : `<div class="foto-vacia">${esc((p.nombre || "?")[0])}</div>`;
     return `<article class="card">
-      ${foto}
-      <h3>${esc(p.nombre)}${st.numero ? " · #" + esc(st.numero) : ""}</h3>
+      <div class="foto-wrap">${foto}${st.numero ? `<span class="dorsal-badge">${esc(st.numero)}</span>` : ""}</div>
+      <h3>${esc(p.nombre)}</h3>
       <p class="pos">${esc(p.posicion || "")}</p>
       <p>${esc(p.descripcion || "Próximamente.")}</p>
     </article>`;
