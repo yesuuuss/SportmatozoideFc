@@ -31,6 +31,18 @@
   .card .pos { color:#22c55e; margin:0 0 8px; font-size:14px; }
   .card p { font-size:14px; line-height:1.4; }
   .precio { font-weight:bold; font-size:18px; }
+  .perfil { display:flex; gap:24px; flex-wrap:wrap; align-items:center; background:#1e293b; border-radius:12px; padding:20px; margin:16px 0; }
+  .perfil .foto { width:180px; height:180px; flex-shrink:0; }
+  .perfil .foto img, .perfil .foto .foto-vacia { width:100%; height:100%; aspect-ratio:auto; }
+  .perfil .datos { flex:1; min-width:220px; }
+  .perfil h2 { text-align:left; margin:0 0 4px; }
+  .perfil .pos { color:#22c55e; margin:0 0 10px; }
+  .perfil .resumen { display:flex; gap:16px; flex-wrap:wrap; margin:12px 0 0; }
+  .perfil .resumen div { background:#0f172a; border-radius:8px; padding:8px 12px; text-align:center; }
+  .perfil .resumen strong { display:block; font-size:20px; }
+  .perfil .resumen span { font-size:12px; color:#94a3b8; }
+  .tabla-perfil { width:100%; max-width:none; margin:16px 0 0; }
+  .tabla-perfil td.total { font-weight:bold; border-top:2px solid #334155; }
   .nota { text-align:center; color:#94a3b8; font-size:14px; }
   #msg { text-align:center; min-height:1.2em; }
   [hidden] { display:none !important; }
@@ -51,10 +63,15 @@
 
   <!-- INICIO: comparador -->
   <section data-vista="inicio">
-    <h1>Comparador de jugadores</h1>
+    <div class="fila">
+      <label>Jugador <select id="p1"></select></label>
+    </div>
+    <article id="perfil" class="perfil"></article>
+
+    <h2>Comparar con otro jugador</h2>
     <div class="fila">
       <label>Temporada <select id="temporada"></select></label>
-      <select id="p1"></select> <span>vs</span> <select id="p2"></select>
+      <label>Comparar con <select id="p2"></select></label>
     </div>
     <table id="tabla"></table>
   </section>
@@ -202,18 +219,78 @@ async function cargar() {
 
 /* ---------- Comparador ---------- */
 function renderComparador() {
-  const opciones = jugadores.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join("");
   const seleccionadaP1 = $("p1").value, seleccionadaP2 = $("p2").value, seleccionadaT = $("temporada").value;
+  const opciones = jugadores.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join("");
   $("temporada").innerHTML = temporadas.map(t => `<option>${esc(t)}</option>`).join("");
-  $("p1").innerHTML = $("p2").innerHTML = opciones;
+  $("p1").innerHTML = opciones;
+  $("p2").innerHTML = `<option value="">— Ninguno —</option>` + opciones;
   if (seleccionadaT && temporadas.includes(seleccionadaT)) $("temporada").value = seleccionadaT;
-  if (seleccionadaP1) $("p1").value = seleccionadaP1;
+  if (seleccionadaP1 && jugadores.some(p => p.id == seleccionadaP1)) $("p1").value = seleccionadaP1;
   if (seleccionadaP2) $("p2").value = seleccionadaP2;
-  else if (jugadores.length > 1) $("p2").selectedIndex = 1;
+  renderPerfil();
   comparar();
 }
 
+/* Perfil del jugador: datos generales y estadísticas de todas sus temporadas */
+function renderPerfil() {
+  const p = jugadores.find(x => x.id == $("p1").value);
+  if (!p) { $("perfil").innerHTML = `<p class="nota">Aún no hay jugadores registrados.</p>`; return; }
+
+  const historial = stats
+    .filter(s => s.player_id == p.id)
+    .sort((x, y) => String(y.temporada).localeCompare(String(x.temporada)));
+  const ultima = historial[0] || {};
+  const total = campo => historial.reduce((suma, s) => suma + (Number(s[campo]) || 0), 0);
+
+  const foto = p.foto_url
+    ? `<img src="${esc(p.foto_url)}" alt="${esc(p.nombre)}">`
+    : `<div class="foto-vacia">${esc((p.nombre || "?")[0])}</div>`;
+
+  const filas = historial.map(s => `
+    <tr>
+      <td>${esc(s.temporada)}</td>
+      <td>${esc(s.equipo || "")}</td>
+      <td>${s.numero ?? ""}</td>
+      <td>${s.partidos ?? 0}</td>
+      <td>${s.goles ?? 0}</td>
+      <td>${s.asistencias ?? 0}</td>
+      <td>${s.tarjetas ?? 0}</td>
+    </tr>`).join("");
+
+  const pie = historial.length ? `
+    <tr>
+      <td class="total" colspan="3">Total</td>
+      <td class="total">${total("partidos")}</td>
+      <td class="total">${total("goles")}</td>
+      <td class="total">${total("asistencias")}</td>
+      <td class="total">${total("tarjetas")}</td>
+    </tr>` : "";
+
+  $("perfil").innerHTML = `
+    <div class="foto">${foto}</div>
+    <div class="datos">
+      <h2>${esc(p.nombre)}${ultima.numero ? " · #" + esc(ultima.numero) : ""}</h2>
+      <p class="pos">${esc(p.posicion || "")}</p>
+      <p>${esc(p.descripcion || "")}</p>
+      <div class="resumen">
+        <div><strong>${historial.length}</strong><span>Temporadas</span></div>
+        <div><strong>${total("partidos")}</strong><span>Partidos</span></div>
+        <div><strong>${total("goles")}</strong><span>Goles</span></div>
+        <div><strong>${total("asistencias")}</strong><span>Asistencias</span></div>
+      </div>
+      ${historial.length ? `
+      <table class="tabla-perfil">
+        <tr><th>Temp.</th><th>Equipo</th><th>Dorsal</th><th>PJ</th><th>Goles</th><th>Asist.</th><th>Tarj.</th></tr>
+        ${filas}${pie}
+      </table>` : `<p class="nota">Sin estadísticas registradas todavía.</p>`}
+    </div>`;
+}
+
 function comparar() {
+  if (!$("p2").value) {
+    $("tabla").innerHTML = `<tr><td class="nota">Elige un jugador en "Comparar con" para ver la comparación.</td></tr>`;
+    return;
+  }
   const temp = $("temporada").value;
   const buscar = id => stats.find(s => s.player_id == id && s.temporada == temp) || {};
   const a = buscar($("p1").value), b = buscar($("p2").value);
@@ -230,7 +307,9 @@ function comparar() {
   });
   $("tabla").innerHTML = html;
 }
-["temporada", "p1", "p2"].forEach(id => $(id).onchange = comparar);
+$("temporada").onchange = comparar;
+$("p2").onchange = comparar;
+$("p1").onchange = () => { renderPerfil(); comparar(); };
 
 /* ---------- Anuario ---------- */
 function renderAnuario() {
