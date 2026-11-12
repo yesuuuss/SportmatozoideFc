@@ -73,6 +73,24 @@
   .perfil .resumen div { background:#0b1220; border:1px solid #334155; border-top:3px solid #22c55e; }
   .perfil .resumen span { color:#94a3b8; }
 
+  /* Sección del equipo con el mismo lenguaje visual que la ficha */
+  .equipo-hero { display:flex; gap:24px; align-items:center; background:linear-gradient(120deg, #0b1220 0%, #1e293b 100%); border:1px solid #334155; border-radius:18px; padding:24px; box-shadow:0 12px 30px rgba(0,0,0,.4); margin-bottom:16px; }
+  .equipo-hero .logo-grande { width:150px; height:150px; margin:0; flex-shrink:0; }
+  .equipo-hero > div { flex:1; min-width:0; }
+  .equipo-titulo { font-size:40px; font-weight:900; letter-spacing:-1px; text-transform:uppercase; text-align:left; margin:0 0 6px; line-height:1.05; }
+  .equipo-intro { margin:8px 0 0; line-height:1.5; color:#cbd5e1; }
+  .info-tarjetas { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin:20px 0; }
+  .info-card { background:linear-gradient(160deg, #1e293b, #0f172a); border:1px solid #334155; border-top:3px solid #22c55e; border-radius:14px; padding:16px; }
+  .info-card .etiqueta { display:block; text-transform:uppercase; letter-spacing:2px; font-size:12px; color:#22c55e; font-weight:800; margin-bottom:8px; }
+  .info-card p { margin:0; line-height:1.5; color:#e2e8f0; }
+  .sec-titulo { text-transform:uppercase; letter-spacing:2px; font-size:18px; text-align:left; margin:28px 0 8px; }
+  @media (max-width: 640px) {
+    .equipo-hero { flex-direction:column; text-align:center; }
+    .equipo-titulo { font-size:30px; text-align:center; }
+    .equipo-intro, .equipo-linea { text-align:center; }
+    .sec-titulo { text-align:center; }
+  }
+
   /* Ficha de jugador tipo estadísticas deportivas */
   .perfil { background:linear-gradient(120deg, #0b1220 0%, #1e293b 100%); border:1px solid #334155; box-shadow:0 12px 30px rgba(0,0,0,.4); }
   .perfil .foto { order:2; width:240px; height:240px; flex-shrink:0; border-radius:14px; overflow:hidden; }
@@ -485,7 +503,7 @@ function renderVideo(url) {
 function renderSobre() {
   const nombreEquipo = info.nombre || "Sportmatozoide FC";
   const aTexto = v => esc(v).replace(/\n/g, "<br>");
-  const bloque = (titulo, valor) => valor ? `<h2 class="sec">${titulo}</h2><p class="texto">${aTexto(valor)}</p>` : "";
+  const tarjeta = (titulo, valor) => valor ? `<div class="info-card"><span class="etiqueta">${titulo}</span><p>${aTexto(valor)}</p></div>` : "";
 
   const ordenadas = [...posiciones].sort((a, b) =>
     (b.pts - a.pts) || ((b.gf - b.gc) - (a.gf - a.gc)) || (b.gf - a.gf));
@@ -498,7 +516,7 @@ function renderSobre() {
       <td><strong>${r.pts}</strong></td>
     </tr>`).join("");
   const tabla = posiciones.length ? `
-    <h2 class="sec">Tabla de posiciones</h2>
+    <h2 class="sec-titulo">Tabla de posiciones</h2>
     <p class="nota">${esc(posiciones[0].torneo || "")}</p>
     <table class="tabla-perfil">
       <tr><th>#</th><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th></tr>
@@ -506,15 +524,21 @@ function renderSobre() {
     </table>` : "";
 
   $("sobre").innerHTML = `
-    <img class="logo-grande" src="logo.png" alt="Logo de ${esc(nombreEquipo)}">
-    <h1>${esc(nombreEquipo)}</h1>
-    ${info.fundacion ? `<p class="nota"><strong>Fundado:</strong> ${esc(info.fundacion)}</p>` : ""}
-    ${info.texto ? `<p class="texto">${aTexto(info.texto)}</p>` : ""}
+    <div class="equipo-hero">
+      <img class="logo-grande" src="logo.png" alt="Logo de ${esc(nombreEquipo)}">
+      <div>
+        ${info.fundacion ? `<p class="equipo-linea">Fundado en ${esc(info.fundacion)}</p>` : ""}
+        <h1 class="equipo-titulo">${esc(nombreEquipo)}</h1>
+        ${info.texto ? `<p class="equipo-intro">${aTexto(info.texto)}</p>` : ""}
+      </div>
+    </div>
     ${renderVideo(info.video_url)}
-    ${bloque("Visión", info.vision)}
-    ${bloque("Misión", info.mision)}
-    <h2 class="sec">Dónde y cuándo jugamos</h2>
-    <p class="texto">${info.sede ? esc(info.sede) : "Próximamente."}${info.horario ? "<br>" + esc(info.horario) : ""}</p>
+    <div class="info-tarjetas">
+      ${tarjeta("Visión", info.vision)}
+      ${tarjeta("Misión", info.mision)}
+      ${tarjeta("Dónde juegan", info.sede || "Próximamente.")}
+      ${tarjeta("Horario", info.horario || "Próximamente.")}
+    </div>
     ${tabla}`;
 }
 
