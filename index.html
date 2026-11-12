@@ -55,6 +55,9 @@
   .bloque { margin-bottom:24px; }
   .sec { font-size:22px; }
 
+  .video { position:relative; width:100%; max-width:700px; aspect-ratio:16/9; margin:16px auto; }
+  .video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; border-radius:10px; }
+
   /* Celulares */
   @media (max-width: 640px) {
     main { padding:12px; }
@@ -171,6 +174,7 @@
           <textarea id="q-mision" placeholder="Misión"></textarea>
           <input id="q-sede" placeholder="Dónde juegan (cancha o sede)">
           <input id="q-horario" placeholder="Horario (ej. sábados 8:00 a 10:00 am)">
+          <input id="q-video" placeholder="Enlace de video de YouTube (opcional)">
           <button>Guardar información</button>
         </form>
 
@@ -407,6 +411,12 @@ function renderAnuario() {
 }
 
 /* ---------- Sobre el equipo ---------- */
+/* Convierte un enlace de YouTube en su versión embebida */
+function urlEmbed(url) {
+  const m = String(url || "").match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+}
+
 function renderSobre() {
   const nombreEquipo = info.nombre || "Sportmatozoide FC";
   const aTexto = v => esc(v).replace(/\n/g, "<br>");
@@ -435,6 +445,7 @@ function renderSobre() {
     <h1>${esc(nombreEquipo)}</h1>
     ${info.fundacion ? `<p class="nota"><strong>Fundado:</strong> ${esc(info.fundacion)}</p>` : ""}
     ${info.texto ? `<p class="texto">${aTexto(info.texto)}</p>` : ""}
+    ${urlEmbed(info.video_url) ? `<div class="video"><iframe src="${urlEmbed(info.video_url)}" title="Video del equipo" allowfullscreen loading="lazy"></iframe></div>` : ""}
     ${bloque("Visión", info.vision)}
     ${bloque("Misión", info.mision)}
     <h2 class="sec">Dónde y cuándo jugamos</h2>
@@ -483,6 +494,7 @@ function renderAdmin() {
   $("q-mision").value = info.mision ?? "";
   $("q-sede").value = info.sede ?? "";
   $("q-horario").value = info.horario ?? "";
+  $("q-video").value = info.video_url ?? "";
 }
 
 function cargarFormEditar() {
@@ -518,7 +530,8 @@ $("form-equipo").onsubmit = async e => {
     vision: $("q-vision").value.trim(),
     mision: $("q-mision").value.trim(),
     sede: $("q-sede").value.trim(),
-    horario: $("q-horario").value.trim()
+    horario: $("q-horario").value.trim(),
+    video_url: $("q-video").value.trim() || null
   });
   mostrarMsg(error ? "Error: " + error.message : "Información guardada ✔");
   if (!error) cargar();
